@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mongo-tools-s3cmd
+            image: mahyar7/mongo-tools-s3cmd:0.1.0
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: MONGODB_HOST
+              value: mongo-svc:27017
+            - name: MONGODB_DB
+              value: rocketchat
+            - name: MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-tools-s3cmd-config
+                  key: db-username
+                  optional: true
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-tools-s3cmd-config
+                  key: db-password
+                  optional: true
+            - name: FILENAME
+              value: test
+            - name: S3_SIGNATURE_V2
+              value: "true"
+            - name: S3_BUCKET
+              value: aitools-backup
+            - name: S3_PREFIX
+              value: test
+            command:
+            - /bin/bash
+            - -c
+            - /scripts/backup.sh
+            volumeMounts:
+              - name: s3cfg
+                mountPath: "/root"
+                readOnly: true
+          volumes:
+            - name: s3cfg
+              secret:
+                secretName: mongo-tools-s3cmd-config
+                optional: false
+          restartPolicy: Never

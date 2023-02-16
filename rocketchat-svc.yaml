@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: rocketchat
+  name: rocketchat-svc
+spec:
+  ports:
+    - name: "web"
+      port: 3000
+      targetPort: 3000
+  selector:
+    app.kubernetes.io/name: rocketchat
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: rocketchat
+  name: rocketchat-prom-svc
+spec:
+  ports:
+    - name: "prom-exporter"
+      port: 9458
+      targetPort: 9458
+  selector:
+    app.kubernetes.io/name: rocketchat
+  externalIPs: [ "x.x.x.x" ]
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rocketchat-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: haproxy
+spec:
+  tls:
+    - hosts:
+      - x.x.x.x
+      secretName: rocketchat-tls
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: rocketchat-svc
+            port:
+              number: 3000

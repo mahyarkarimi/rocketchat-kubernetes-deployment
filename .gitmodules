@@ -1,0 +1,3 @@
+[submodule "mongodb-kubernetes-operator"]
+	path = mongodb-kubernetes-operator
+	url = https://github.com/mongodb/mongodb-kubernetes-operator.git

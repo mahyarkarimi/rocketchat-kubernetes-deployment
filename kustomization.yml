@@ -1,0 +1,77 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: chat
+
+generatorOptions:
+  disableNameSuffixHash: true # this flag is used to avoid creation of new configmap, instead it will be modified when file context is changed
+helmCharts:
+  - name: mongodb
+    repo: https://charts.bitnami.com/bitnami
+    namespace: chat
+    releaseName: mongodb
+    valuesInline:
+      global:
+        imageRegistry: hub.docker.com
+        storageClass: local-path
+      persistence:
+        size: 20Gi
+        resourcePolicy: "keep"
+      architecture: replicaset
+      replicaSetName: rs0
+      replicaCount: 2
+      replicaSetHostnames: true
+      clusterDomain: cluster.local
+      image:
+        tag: 5.0.9
+      service:
+        nameOverride: mongo-svc
+      auth:
+        existingSecret: 'db-user-password'
+  - name: haproxy-ingress
+    repo: https://haproxy-ingress.github.io/charts
+    releaseName: haproxy-ingress
+    namespace: chat
+    valuesInline:
+      controller:
+        config:
+          max-connections: "200000"
+          balance-algorithm: leastconn
+        #nodeSelector:
+        #  kubernetes.io/hostname: node1
+        daemonset:
+          useHostPort: true
+          hostPorts:
+        replicaCount: 5
+        logs:
+          enabled: true
+        haproxy:
+          enabled: true
+        stats:
+          enabled: true
+          port: 1936
+          service:
+            externalIPs: [ "x.x.x.x" ]
+            type: NodePort
+            servicePort: 1936
+        metrics:
+          enabled: true
+          service:
+            type: NodePort
+            externalIPs: [ "x.x.x.x" ]
+        service:
+          enabled: true
+          httpPorts:
+            - port: 80
+              targetPort: http
+          httpsPorts:
+            - port: 443
+              targetPort: https
+          externalIPs: [ "x.x.x.x" ]
+resources:
+  - rancher/local-path-storage.yaml
+  - secrets.yaml
+  - rocketchat-svc.yaml
+  - minio.yaml
+  # - mongo.yaml
+  - rocketchat-deployment.yaml
+  - mongo-cron-backup.yaml

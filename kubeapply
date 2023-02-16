@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo kubectl kustomize --enable-helm -n chat | sudo kubectl -n chat apply -f -

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: rocketchat
+  name: rocketchat
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rocketchat
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rocketchat
+    spec:
+      containers:
+        - name: rocketchat
+          image: rocket.chat:5.4.0
+          env:
+            - name: MONGO_OPLOG_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rocketchat-creds
+                  key: mongo-oplog-url
+                  optional: false
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rocketchat-creds
+                  key: mongo-url
+                  optional: false
+            - name: PORT
+              value: "3000"
+            - name: ROOT_URL
+              value: http://localhost:3000
+          ports:
+            - containerPort: 3000
+            - containerPort: 9458
+          resources:
+            limits:
+              memory: 2.5Gi
+              cpu: 1000m
+      terminationGracePeriodSeconds: 10
+      hostname: rocketchat
+      restartPolicy: Always
+status: {}
